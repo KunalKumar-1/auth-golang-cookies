@@ -1,0 +1,2 @@
+paths-ignore:
+  - ".idea/httpRequests/http-requests-log.http"

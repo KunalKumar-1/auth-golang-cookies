@@ -37,13 +37,21 @@ func main() {
 		log.Fatal("could not connect to database")
 	}
 
+	// logging colors
+	const (
+		Red   = "\033[31m"
+		Green = "\033[32m"
+		Reset = "\033[0m"
+	)
+
 	var testQuery int
 	err = conn.QueryRow("SELECT 1").Scan(&testQuery)
+
 	if err != nil {
-		log.Fatal("database connection test failed!!")
+		log.Fatal(Red + "test: database connection test failed !" + Reset)
 	} else {
-		log.Println("database connection test query executed successfully!")
-		log.Print("Database connection is working fine!!")
+		log.Println(Green + "test: database connection test query executed successfully !" + Reset)
+		log.Print(Green + "test: Database connection is working fine !" + Reset)
 	}
 
 	//setup API configuration
@@ -59,7 +67,11 @@ func main() {
 
 	//initialising the router
 	router := gin.Default()
+	api := router.Group("/api/v1/")
 
-	router.GET("/health-check", localApiConfig.HandlerCheckReadiness)
+	api.GET("/health-check", localApiConfig.HandlerCheckReadiness)
+	api.POST("/sign-in", localApiConfig.SignInHandler)
+	api.POST("/logout", localApiConfig.LogOutHandler)
+
 	log.Fatal(router.Run(":8080"))
 }
