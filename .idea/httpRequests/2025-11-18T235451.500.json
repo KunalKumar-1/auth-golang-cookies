@@ -1,0 +1,11 @@
+{
+  "error": "pq: duplicate key value violates unique constraint \"users_username_key\""
+}{
+  "ID": "00000000-0000-0000-0000-000000000000",
+  "Name": "",
+  "Username": "",
+  "Email": "",
+  "Password": "",
+  "CreatedAt": "0001-01-01T00:00:00Z",
+  "UpdatedAt": "0001-01-01T00:00:00Z"
+}
