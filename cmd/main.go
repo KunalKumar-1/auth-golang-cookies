@@ -54,8 +54,7 @@ func main() {
 		log.Print(Green + "test: Database connection is working fine !" + Reset)
 	}
 
-	//setup API configuration
-
+	// setup API configuration
 	apiConfig := &config.ApiConfig{
 		DB:          database.New(conn),
 		RedisClient: redisClient,
@@ -65,13 +64,14 @@ func main() {
 		ApiConfig: apiConfig,
 	}
 
-	//initialising the router
+	// initialising the router
 	router := gin.Default()
 	api := router.Group("/api/v1/")
 
 	api.GET("/health-check", localApiConfig.HandlerCheckReadiness)
 	api.POST("/sign-in", localApiConfig.SignInHandler)
 	api.POST("/logout", localApiConfig.LogOutHandler)
+	api.POST("/signup", localApiConfig.HandleCreateUser)
 
 	log.Fatal(router.Run(":8080"))
 }

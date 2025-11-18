@@ -93,7 +93,7 @@ func (lac *LocalApiConfig) SignInHandler(c *gin.Context) {
 	err = lac.RedisClient.Set(c, sessionId, sessionDataJSON, time.Until(expirationTime)).Err()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to save the session data to Redis",
+			"error": err.Error(),
 		})
 		return
 	}
