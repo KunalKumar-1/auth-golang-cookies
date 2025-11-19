@@ -1,3 +1,0 @@
-{
-  "error": "dial tcp [::1]:6379: connect: connection refused"
-}

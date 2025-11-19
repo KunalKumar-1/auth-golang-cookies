@@ -5,6 +5,7 @@ import (
 	"auth-golang-cookies/internal/config"
 	"auth-golang-cookies/internal/database"
 	"database/sql"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -44,6 +45,7 @@ func main() {
 		Reset = "\033[0m"
 	)
 
+	// testing the db connection
 	var testQuery int
 	err = conn.QueryRow("SELECT 1").Scan(&testQuery)
 
@@ -66,12 +68,18 @@ func main() {
 
 	// initialising the router
 	router := gin.Default()
-	api := router.Group("/api/v1/")
+	//cors
+	router.Use(cors.Default())
+	authorized := router.Group("/")
+	authorized.Use(localApiConfig.AuthMiddleware())
+	{
+		authorized.GET("/health-check", localApiConfig.HandlerCheckReadiness)
+		authorized.GET("/test-auth", localApiConfig.HandlerAuthRoute)
+	}
 
-	api.GET("/health-check", localApiConfig.HandlerCheckReadiness)
-	api.POST("/sign-in", localApiConfig.SignInHandler)
-	api.POST("/logout", localApiConfig.LogOutHandler)
-	api.POST("/signup", localApiConfig.HandleCreateUser)
+	router.POST("/sign-in", localApiConfig.SignInHandler)
+	router.POST("/logout", localApiConfig.LogOutHandler)
+	router.POST("/signup", localApiConfig.HandleCreateUser)
 
 	log.Fatal(router.Run(":8080"))
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"auth-golang-cookies/models"
+	"auth-golang-cookies/utils"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -12,18 +13,19 @@ import (
 )
 
 type Claims struct {
-	Email string `json:"email"`
+	Email  string    `json:"email"`
+	UserId uuid.UUID `json:"userId"`
 	jwt.RegisteredClaims
 }
 
 type JWTOutput struct {
-	Token  string    `json:"string"`
+	Token  string    `json:"token"`
 	Expire time.Time `json:"expires"`
 }
 
 type SessionData struct {
-	Token  string    `json:"string"`
-	UserId uuid.UUID `json:"user_id"`
+	Token  string    `json:"token"`
+	UserId uuid.UUID `json:"userId"`
 }
 
 func (lac *LocalApiConfig) SignInHandler(c *gin.Context) {
@@ -32,6 +34,15 @@ func (lac *LocalApiConfig) SignInHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&userToAuth); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
+		})
+		return
+	}
+
+	//insert validation here
+	validationError := utils.ValidateUserToAuth(userToAuth)
+	if len(validationError) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validationError,
 		})
 		return
 	}
@@ -101,7 +112,7 @@ func (lac *LocalApiConfig) SignInHandler(c *gin.Context) {
 	// Setting httpCookie
 	c.SetCookie("session_id", sessionId, int(time.Until(expirationTime)), "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Session created successfully",
+		"message": "Logged in successfully",
 		"expires": expirationTime,
 	})
 }
@@ -129,4 +140,52 @@ func (lac *LocalApiConfig) LogOutHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Redis Session Removed successfully",
 	})
+}
+
+func (lac *LocalApiConfig) AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionId, err := c.Cookie("session_id")
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Unauthorized - no session",
+			})
+			return
+		}
+		sessionDataJSON, err := lac.RedisClient.Get(c, sessionId).Result()
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid or expired Session from Redis",
+			})
+			return
+		}
+
+		var sessionData SessionData
+		err = json.Unmarshal([]byte(sessionDataJSON), &sessionData)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Failed to decode/unmarshal session data",
+			})
+			return
+		}
+
+		token, err := jwt.ParseWithClaims(sessionData.Token, &Claims{},
+			func(token *jwt.Token) (interface{}, error) {
+				return []byte(os.Getenv("JWT_SECRET")), nil
+			})
+		if err != nil || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token",
+			})
+			return
+		}
+		c.Set("userId", sessionData.UserId)
+		c.Next()
+	}
+}
+
+func (lac *LocalApiConfig) HandlerAuthRoute(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Authenticated routes are working successfully",
+	})
+	return
 }
