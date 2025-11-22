@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/pusher/pusher-http-go"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
@@ -56,10 +57,20 @@ func main() {
 		log.Print(Green + "test: Database connection is working fine !" + Reset)
 	}
 
+	//Inintialize the pusher here
+	pusherClient := &pusher.Client{
+		AppID:   os.Getenv("PUSHER_APP_ID"),
+		Key:     os.Getenv("PUSHER_APP_KEY"),
+		Secret:  os.Getenv("PUSHER_APP_SECRET"),
+		Cluster: os.Getenv("PUSHER_APP_CLUSTER"),
+		Secure:  false,
+	}
+
 	// setup API configuration
 	apiConfig := &config.ApiConfig{
-		DB:          database.New(conn),
-		RedisClient: redisClient,
+		DB:           database.New(conn),
+		RedisClient:  redisClient,
+		PusherClient: pusherClient,
 	}
 
 	localApiConfig := &handlers.LocalApiConfig{
@@ -74,7 +85,9 @@ func main() {
 	authorized.Use(localApiConfig.AuthMiddleware())
 	{
 		authorized.GET("/health-check", localApiConfig.HandlerCheckReadiness)
-		authorized.GET("/test-auth", localApiConfig.HandlerAuthRoute)
+		authorized.GET("/auth-route", localApiConfig.HandlerAuthRoute)
+		authorized.GET("/check-ws", localApiConfig.HandlerCheckWS)
+		authorized.POST("/send-message", localApiConfig.HandlerSendMessage)
 	}
 
 	router.POST("/sign-in", localApiConfig.SignInHandler)
