@@ -87,7 +87,7 @@ func main() {
 	{
 		authorized.GET("/health-check", localApiConfig.HandlerCheckReadiness)
 		authorized.GET("/auth-route", localApiConfig.HandlerAuthRoute)
-		authorized.GET("/check-ws", localApiConfig.HandlerCheckWS)
+		authorized.GET("/check-ws", localApiConfig.HandlerPusherWS)
 		authorized.POST("/send-message", localApiConfig.HandlerSendMessage)
 	}
 
