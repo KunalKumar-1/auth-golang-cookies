@@ -2,6 +2,7 @@ package config
 
 import (
 	"auth-golang-cookies/internal/database"
+
 	"github.com/pusher/pusher-http-go"
 	"github.com/redis/go-redis/v9"
 )
