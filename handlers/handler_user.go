@@ -3,10 +3,11 @@ package handlers
 import (
 	"auth-golang-cookies/internal/config"
 	"auth-golang-cookies/internal/database"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type LocalApiConfig struct {
