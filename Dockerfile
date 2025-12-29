@@ -1,28 +1,36 @@
-version: "3.9"
+# ---------- Build stage ----------
+FROM golang:1.25.5-alpine3.23 AS builder
 
-services:
-  app:
-    build: .
-    container_name: auth-go-servies
-    ports:
-      - "4000:4000"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
+WORKDIR /app
 
-  postgres:
-    image: postgres:16
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: appdb
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+# Install git (needed for some Go modules)
+RUN apk add --no-cache git
 
-volumes:
-  pgdata:
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build static binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -o app cmd/main.go
+
+
+# ---------- Runtime stage ----------
+FROM alpine:3.23
+
+WORKDIR /app
+
+# TLS certificates for HTTPS, DB, APIs
+RUN apk add --no-cache ca-certificates
+
+# Copy binary from builder
+COPY --from=builder /app/app .
+
+# Expose app port
+EXPOSE 4000
+
+# Run the app
+CMD ["./app"]
